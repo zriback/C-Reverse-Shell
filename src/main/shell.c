@@ -8,7 +8,7 @@ struct Shell createShell(int type, int port, int ip[4]) {
     shell.type = type;
     shell.port = port;
     
-    shell.ip = (int*)malloc(4*sizeof(int));
+    // shell.ip = (int*)malloc(4*sizeof(int));
     shell.ip = ip;
     
     return shell;

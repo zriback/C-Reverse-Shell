@@ -1,7 +1,7 @@
 #ifndef SHELL_HEADER
 #define SHELL_HEADER
 
-struct Shell createShell(int type, int port, int ip[4]);
+struct Shell createShell(int type, int port, int * ip);
 
 // Holds basic members pertaining to the shell we are defining
 struct Shell {
