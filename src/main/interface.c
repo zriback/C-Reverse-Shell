@@ -11,9 +11,9 @@ void startInterface() {
     struct Shell shell;
 
     // creating our shell
-    int type = -1;
-    int port = -1;
-    int ip[4];
+    int type = 0;
+    int port = 4444;
+    int ip[4] = {192,168,1,1};
 
     char input[64];
     char * param;
@@ -29,7 +29,7 @@ void startInterface() {
             param = strtok(input, "=");
             val = strtok(NULL, "=");
 
-            printf("%s %s\n", param, val);
+            printf("%s=%s\n", param, val);
 
             // if else ladder
             if (strcmp(param, "type") == 0) {
@@ -49,25 +49,42 @@ void startInterface() {
                 }   
             }
             else {
-                printf("%s is not recognized.\nTry using type=n, port=n, or ip=x.x.x.x", param);
+                printf("%s is not recognized.\nTry using type=n, port=n, or ip=x.x.x.x ", param);
             }
         }
         else { // there is no = in the input
-            if (strcmp(input, "CREATE") == 0){
+            if (strcmp(input, "create") == 0){
 
                 shell = createShell(type, port, ip);
                 
-                printf("type=%d, port=%d\n", shell.type, shell.port);
-                // printf("%f", sizeof(shell.ip)/sizeof(int));
+                printf("Creating shell with the following settings\n");
+                printf("type=%d, port=%d\nip=", shell.type, shell.port);
+                
                 for (int i = 0; i < 4; i++){
-                    printf("%d ", shell.ip[i]);
+                    printf("%d", shell.ip[i]);
+                    if (i != 3){
+                        printf(".");
+                    }
                 }
+
+            }
+            else if (strcmp(input, "exit")) {
+                printf("\nExiting...\n\n");
+                break;
+            }
+            else if (strcmp(input, "help")) {
+                printf("Use type=x, port=x, and ip=x.x.x.x to set settings for the shell.\n");
+                printf("create - creates shell with the current settings.");
+                printf("exit - exit the interface");
+                printf("help - bring up this help menu.");
+            } else {
+                printf("Use \'help\' to bring up the help menu.")
             }
         }
         
         
 
-        // USE THE CREATE SHELL VARIABLE AND THEN USE LOCAL VARIABLES HERE INSTEAD OF WHAT WE ARE DOING RIGHT NOW
+        
         
     }
 }
