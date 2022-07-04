@@ -10,13 +10,10 @@ void startInterface() {
 
     struct Shell shell;
 
-    // creating our shell
+    // creating our shell with default values
     shell.type = 0;
     shell.port = 4444;
-    shell.ip[0] = 192;
-    shell.ip[1] = 168;
-    shell.ip[2] = 1;
-    shell.ip[3] = 1;
+    shell.ip = "192.168.1.1";
 
     char input[64];
     char * param;
@@ -42,44 +39,29 @@ void startInterface() {
                 shell.port = atoi(val);
             }
             else if (strcmp(param, "ip") == 0) {
-                
-                char * octet;
-                octet = strtok(val, ".");
-                shell.ip[0] = atoi(octet);
-                for (int i = 1; i < 4; i++) {
-                    octet = strtok(NULL, ".");
-                    shell.ip[i] = atoi(octet);
-                }   
+                shell.ip = val;
             }
             else {
-                printf("%s is not recognized.\nTry using type=n, port=n, or ip=x.x.x.x ", param);
+                printf("%s is not recognized.\nTry using type=n, port=n, or ip=x.x.x.x\n", param);
             }
         }
         else { // there is no = in the input
             if (strcmp(input, "create") == 0){
-                
                 printf("Creating shell with the following settings\n");
-                printf("type=%d, port=%d\nip=", shell.type, shell.port);
-                
-                for (int i = 0; i < 4; i++){
-                    printf("%d", shell.ip[i]);
-                    if (i != 3){
-                        printf(".");
-                    }
-                }
-
+                printf("type=%d, port=%d\nip=%s\n", shell.type, shell.port, shell.ip);
+                createShellExecutable(shell);
             }
-            else if ((input, "exit")) {
+            else if (strcmp(input, "exit") == 0) {
                 printf("\nExiting...\n\n");
                 break;
             }
-            else if (strcmp(input, "help")) {
+            else if (strcmp(input, "help") == 0) {
                 printf("Use type=x, port=x, and ip=x.x.x.x to set settings for the shell.\n");
-                printf("create - creates shell with the current settings.");
-                printf("exit - exit the interface");
-                printf("help - bring up this help menu.");
+                printf("create - creates shell with the current settings.\n");
+                printf("exit - exit the interface.\n");
+                printf("help - bring up this help menu.\n");
             } else {
-                printf("Use \'help\' to bring up the help menu.");
+                printf("Use \'help\' to bring up the help menu.\n");
             }
         }
         
