@@ -3,15 +3,11 @@
 #include <stdlib.h>
 #include <strings.h>
 
-struct Shell createShell(int type, int port, int ip[4]) {
-    struct Shell shell;
-    shell.type = type;
-    shell.port = port;
+// Shell struct defined in .h file
+
+void createShellExecutable(struct Shell shell) {
+    // use gcc to create the shell executable with the correct params
     
-    // shell.ip = (int*)malloc(4*sizeof(int));
-    shell.ip = ip;
-    
-    return shell;
 }
 
 
