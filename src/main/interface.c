@@ -11,9 +11,12 @@ void startInterface() {
     struct Shell shell;
 
     // creating our shell
-    int type = 0;
-    int port = 4444;
-    int ip[4] = {192,168,1,1};
+    shell.type = 0;
+    shell.port = 4444;
+    shell.ip[0] = 192;
+    shell.ip[1] = 168;
+    shell.ip[2] = 1;
+    shell.ip[3] = 1;
 
     char input[64];
     char * param;
@@ -33,19 +36,19 @@ void startInterface() {
 
             // if else ladder
             if (strcmp(param, "type") == 0) {
-                type = atoi(val);
+                shell.type = atoi(val);
             }
             else if (strcmp(param, "port") == 0) {
-                port = atoi(val);
+                shell.port = atoi(val);
             }
             else if (strcmp(param, "ip") == 0) {
                 
                 char * octet;
                 octet = strtok(val, ".");
-                ip[0] = atoi(octet);
+                shell.ip[0] = atoi(octet);
                 for (int i = 1; i < 4; i++) {
                     octet = strtok(NULL, ".");
-                    ip[i] = atoi(octet);
+                    shell.ip[i] = atoi(octet);
                 }   
             }
             else {
@@ -54,8 +57,6 @@ void startInterface() {
         }
         else { // there is no = in the input
             if (strcmp(input, "create") == 0){
-
-                shell = createShell(type, port, ip);
                 
                 printf("Creating shell with the following settings\n");
                 printf("type=%d, port=%d\nip=", shell.type, shell.port);
@@ -68,7 +69,7 @@ void startInterface() {
                 }
 
             }
-            else if (strcmp(input, "exit")) {
+            else if ((input, "exit")) {
                 printf("\nExiting...\n\n");
                 break;
             }
@@ -78,7 +79,7 @@ void startInterface() {
                 printf("exit - exit the interface");
                 printf("help - bring up this help menu.");
             } else {
-                printf("Use \'help\' to bring up the help menu.")
+                printf("Use \'help\' to bring up the help menu.");
             }
         }
         
