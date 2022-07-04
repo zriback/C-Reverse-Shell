@@ -1,3 +1,5 @@
 run.ps1
 .vscode
 output.exe
+src/main/*.exe
+src/shells/*.exe
