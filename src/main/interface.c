@@ -16,8 +16,8 @@ void startInterface() {
     shell.ip = "192.168.1.1";
 
     char input[64];
-    char * param;
-    char * val;
+    char * param = (char*)calloc(32, sizeof(char*));
+    char * val = (char*)calloc(32, sizeof(char*));
     const char equals = '=';
 
     while (1) {
@@ -26,8 +26,8 @@ void startInterface() {
         scanf("%s", input);
 
         if (strchr(input, equals) != NULL){ // there is an = in the input
-            param = strtok(input, "=");
-            val = strtok(NULL, "=");
+            strcpy(param, strtok(input, "="));
+            strcpy(val, strtok(NULL, "="));
 
             printf("%s=%s\n", param, val);
 
@@ -64,10 +64,9 @@ void startInterface() {
                 printf("Use \'help\' to bring up the help menu.\n");
             }
         }
-        
-        
-
-        
-        
+          
     }
+    free(param);
+    free(val);
+
 }
