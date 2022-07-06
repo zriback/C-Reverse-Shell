@@ -8,23 +8,28 @@
 #define str(s) #s
 
 int port;
-int ip[4];
+char * ip;
 
 
 
 
 int main(){
-    const char * ip_str;
+    port = 4444;
+    ip = (char*)calloc(16, sizeof(char));
+    strcpy(ip, "192.168.1.1");
+
     #ifdef PORT
         port = PORT;
     #endif
 
     #ifdef IP
-        ip_str = xstr(IP);
+        ip = xstr(IP);
     #endif
     
     printf("Port: %d\n", port);
-    printf("IP: %s\n", ip_str);
+    printf("IP: %s\n", ip);
+
+    free(ip);
 
     return 0;
 }
