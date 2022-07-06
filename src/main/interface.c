@@ -13,7 +13,8 @@ void startInterface() {
     // creating our shell with default values
     shell.type = 0;
     shell.port = 4444;
-    shell.ip = "192.168.1.1";
+    shell.ip = (char*)calloc(24, sizeof(char));
+    strcpy(shell.ip, "192.168.1.1");
 
     char input[64];
     char * param = (char*)calloc(32, sizeof(char*));
@@ -39,7 +40,7 @@ void startInterface() {
                 shell.port = atoi(val);
             }
             else if (strcmp(param, "ip") == 0) {
-                shell.ip = val;
+                strcpy(shell.ip, val);
             }
             else {
                 printf("%s is not recognized.\nTry using type=n, port=n, or ip=x.x.x.x\n", param);
@@ -60,7 +61,12 @@ void startInterface() {
                 printf("create - creates shell with the current settings.\n");
                 printf("exit - exit the interface.\n");
                 printf("help - bring up this help menu.\n");
-            } else {
+                printf("current - show current shell settings.");
+            }
+            else if (strcmp(input, "current") == 0) {
+                printf("Current settings:\ntype=%d, port=%d\nip=%s\n", shell.type, shell.port, shell.ip);
+            }
+            else {
                 printf("Use \'help\' to bring up the help menu.\n");
             }
         }
@@ -68,5 +74,6 @@ void startInterface() {
     }
     free(param);
     free(val);
+    free(shell.ip);
 
 }
