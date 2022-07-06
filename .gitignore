@@ -3,3 +3,5 @@ run.ps1
 output.exe
 src/main/*.exe
 src/shells/*.exe
+src/*.exe
+runshell.ps1
