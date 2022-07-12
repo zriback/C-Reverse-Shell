@@ -54,14 +54,14 @@ int startShell() {
     WORD version = MAKEWORD(2,2);
     int wsock = WSAStartup(version, &wsData);
     if ( wsock != 0) {
-        printf("Can't initialize winsock. Quitting...");
+        printf("Can't initialize winsock. Quitting...\n");
         return 1;
     }
 
     // create a socket
     SOCKET sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock == INVALID_SOCKET){
-        printf("Invalid socket. Quitting...");
+        printf("Invalid socket. Quitting...\n");
         return 1;
     }
 
@@ -96,20 +96,22 @@ int startShell() {
     char buf[4096];
     while (TRUE){
         memset(buf, 0, sizeof(buf));
-        int bytesRecieved = recv(clientSocket, buf, 4096, 0); // this function returns the length of the message in bytes
-        if (bytesRecieved == SOCKET_ERROR){
-            printf("Error recieving data. Exiting...");
+        int bytesRec = recv(clientSocket, buf, 4096, 0); // this function returns the length of the message in bytes
+        if (bytesRec == SOCKET_ERROR){
+            printf("Error recieving data. Exiting...\n");
             break;
-        } else if (bytesRecieved == 0){
-            printf("Client disconnected. Exiting...");
+        } else if (bytesRec == 0){
+            printf("Client disconnected. Exiting...\n");
             break;
         }
 
-        char reply[50] = "You said: ";
+        char * reply = (char*)calloc(bytesRec, sizeof(char));
+        strcpy(reply, "You said: ");
         strcat(reply, buf);
+        strcat(reply, "\n");
 
         // send message back to the client
-        send(clientSocket, reply, bytesRecieved + 1, 0);
+        send(clientSocket, reply, bytesRec + 1, 0);
     
     }
     
