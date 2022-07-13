@@ -80,7 +80,7 @@ int initiateConnection(){
     do {
         // prompt user
         printf("> ");
-        scanf("%31s", input);
+        fgets(input, sizeof(input), stdin);  // use fgets to input with spaces can be accepted
 
         int sendResult = send(sock, input, sizeof(input), 0); //maybe need a size+1 here?
         if (sendResult != SOCKET_ERROR){
@@ -88,15 +88,18 @@ int initiateConnection(){
             
             int bytesRec = recv(sock, buf, sizeof(buf), 0); // waits for response and blocks - response it copied into buff
             if (bytesRec > 0){  // then print the message
-                char * output = (char*)calloc(bytesRec, sizeof(char));
-                strncpy(output, buf, bytesRec);
-                printf("%s", output);
-                free(output);
+                char * response = (char*)calloc(bytesRec+1, sizeof(char));
+                strncpy(response, buf, bytesRec);
+                printf("%s", response);
+                free(response);
             }
         
         }
+        else{
+            printf("Error sending command");
+        }
 
-    } while (strcmp(input, "exit") != 0);
+    } while (strcmp(input, "close") != 0);
 
 
 }

