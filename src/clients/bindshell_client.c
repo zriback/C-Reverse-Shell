@@ -75,12 +75,13 @@ int initiateConnection(){
 
     // send and recieve data
     char buf[4096];
-    char input[32];
+    char input[128];
 
     do {
         // prompt user
         printf("> ");
         fgets(input, sizeof(input), stdin);  // use fgets to input with spaces can be accepted
+        input[strcspn(input, "\n")] = '\0';  // get rid of the trailing new line character
 
         int sendResult = send(sock, input, sizeof(input), 0); //maybe need a size+1 here?
         if (sendResult != SOCKET_ERROR){
@@ -98,7 +99,7 @@ int initiateConnection(){
         else{
             printf("Error sending command");
         }
-
+        printf("\n");
     } while (strcmp(input, "close") != 0);
 
 

