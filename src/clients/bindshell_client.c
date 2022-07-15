@@ -1,14 +1,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "clientComm.h"
 
+#ifndef CLIENT_COMM_HEADER
 #include <ws2tcpip.h>
 #pragma comment(lib, "ws2_32.lib")
+#endif
 
 // Two macros for stringizing s
 // More info at https://gcc.gnu.org/onlinedocs/cpp/Argument-Prescan.html#Argument-Prescan
 #define xstr(s) str(s)
 #define str(s) #s
+
+#define BUF_SIZE 4096
+#define INPUT_SIZE 512
 
 int initiateConnection();
 
@@ -74,33 +80,12 @@ int initiateConnection(){
     printf("Connection established with %s through port %d\n", ip, port);
 
     // send and recieve data
-    char buf[4096];
-    char input[128];
 
-    do {
-        // prompt user
-        printf("> ");
-        fgets(input, sizeof(input), stdin);  // use fgets to input with spaces can be accepted
-        input[strcspn(input, "\n")] = '\0';  // get rid of the trailing new line character
-
-        int sendResult = send(sock, input, sizeof(input), 0); //maybe need a size+1 here?
-        if (sendResult != SOCKET_ERROR){
-            memset(buf, 0, sizeof(buf));
-            
-            int bytesRec = recv(sock, buf, sizeof(buf), 0); // waits for response and blocks - response it copied into buff
-            if (bytesRec > 0){  // then print the message
-                char * response = (char*)calloc(bytesRec+1, sizeof(char));
-                strncpy(response, buf, bytesRec);
-                printf("%s", response);
-                free(response);
-            }
-        
-        }
-        else{
-            printf("Error sending command");
-        }
-        printf("\n");
-    } while (strcmp(input, "close") != 0);
-
+    while ( comm(sock, BUF_SIZE, INPUT_SIZE) );
+    
+    // when it is done, clean up
+    closesocket(sock);
+    WSACleanup();
+    printf("Connection ended! Goodbye!");
 
 }
