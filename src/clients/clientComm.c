@@ -25,7 +25,12 @@ int comm(SOCKET sock, int BUF_SIZE, int INPUT_SIZE){
         return 0;
     }
     else{
-        int sendResult = send(sock, input, sizeof(input), 0); //maybe need a size+1 here?
+        // create a smaller sending string first the is the size of the actual input
+        char * sendString = (char*)calloc(strlen(input)+1, sizeof(char));
+        strcpy(sendString, input);
+        int sendResult = send(sock, sendString, strlen(input)+1, 0); //maybe need a size+1 here?
+        free(sendString);
+
         if (sendResult != SOCKET_ERROR){
             memset(buf, 0, sizeof(buf));
             int bytesRec = recv(sock, buf, sizeof(buf), 0); // waits for response and blocks - response is copied into buff
