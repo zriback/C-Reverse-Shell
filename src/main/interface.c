@@ -11,10 +11,10 @@ void startInterface() {
     struct Shell shell;
 
     // creating our shell with default values
-    shell.type = 0;
-    shell.port = 4444;
+    shell.type = 0;                     // default value
+    shell.port = 4444;                  // default value
     shell.ip = (char*)calloc(24, sizeof(char));
-    strcpy(shell.ip, "192.168.1.1");
+    strcpy(shell.ip, "127.0.0.1");      // default value (for testing)
 
     char input[64];
     char * param = (char*)calloc(32, sizeof(char*));
@@ -63,7 +63,7 @@ void startInterface() {
                 printf("help - bring up this help menu.\n");
                 printf("current - show current shell settings.");
             }
-            else if (strcmp(input, "current") == 0) {
+            else if (strcmp(input, "current") == 0 || strcmp(input, "curr") == 0) {
                 printf("Current settings:\ntype=%d, port=%d\nip=%s\n", shell.type, shell.port, shell.ip);
             }
             else {

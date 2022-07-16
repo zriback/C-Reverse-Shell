@@ -87,5 +87,6 @@ int initiateConnection(){
     closesocket(sock);
     WSACleanup();
     printf("Connection ended! Goodbye!");
+    return 0;
 
 }

