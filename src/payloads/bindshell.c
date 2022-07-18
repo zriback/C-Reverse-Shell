@@ -99,7 +99,7 @@ int startShell() {
     // don't need the listening socket because now we have the connected socket
     closesocket(sock);
 
-    while( comm(clientSocket, BUF_SIZE, REPLY_MAX_SIZE) );
+    comm(clientSocket, BUF_SIZE, REPLY_MAX_SIZE);
     closesocket(clientSocket);
     WSACleanup();
     printf("Client ended connection. Good bye!");

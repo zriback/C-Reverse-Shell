@@ -81,7 +81,7 @@ int initiateConnection() {
     }
     printf("Connection established with %s through port %d\n", ip, port);
 
-    while ( comm(sock, BUF_SIZE, REPLY_MAX_SIZE) );
+    comm(sock, BUF_SIZE, REPLY_MAX_SIZE);
 
     // when it is done, clean up
     closesocket(sock);
