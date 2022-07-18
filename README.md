@@ -10,7 +10,7 @@ To begin, compile the main/ directory using a C compiler and then run the result
 
 ```.\output.exe```
 
-Using the providing interface, setup your desired shell by setting the type, port, and IP address. Use the "help" command in this interface to learn more. Once you have all the correct/desired settings, use the "create" command to create the shell and client executable.
+Using the provided interface, setup your desired shell by setting the type, port, and IP address. Use the "help" command in this interface to learn more. Once you have all the correct/desired settings, use the "create" command to create the shell and client executable.
 
 **NOTE:** The project structure is very important as the program assumes it is unchanged when it is compiling the shell and client from their C files. If the relative file structure is changed there will be errors.
 
@@ -36,23 +36,19 @@ and to read a file, use
 
 ```> c more file```.
 
-##### Note about working directories
-As of 7/17/2022, the current working directory (cwd) cannot be changed using relative routes. For instance,
+##### Working directories
 
-```> c cd folder_in_cwd```
+Its also important to note that the attacker can change directory around the victims machine like normal. To do so, use commands like
 
-```> c dir```
+```c cd ..``` - move to parent directory
 
-will **NOT** list the contents of the folder you tried to cd into. The first command will have no effect on your working directory and will just spit back an error message. However, 
-you can still use absolute paths (beginning with C:\ or whatever the name of the drive is) to cd into a folder in your cwd. To go up a level, the following command also works:
+```c cd directory_name/``` - use relative path
 
-```> c cd ..``` 
+```c cd C:\Users``` - use absolute path
 
-Additionally, it is currently impossible to change the drive of your cwd. Commands like
+```c D:``` - change drives (in this case, to the D drive)
 
-```> c C:```
-
-will not put you in the C drive.
+The default working directory will be set to the current users home directory.
 
 ### Other commands
 
