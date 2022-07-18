@@ -85,7 +85,7 @@ char* processShellCmd(char * cmd, char * cwd, int REPLY_MAX_SIZE) {
     // everything related to current working directory
     // if it is a cd command, change the current working directory, if it's not, prepend the cd to cwd and then getCmdOut
     char cmdCopy[64];
-    strcpy(cmdCopy, cmd);
+    strncpy(cmdCopy, cmd, sizeof(cmdCopy));
     char * arg;
     if (strcmp(strtok(cmdCopy, " "), "cd") == 0 && (arg=strtok(NULL, " ")) != NULL){
         if (strcmp(arg, "..") == 0){ // then cd to parent directory
@@ -96,26 +96,28 @@ char* processShellCmd(char * cmd, char * cwd, int REPLY_MAX_SIZE) {
                 }
             }
         }
-        else{
-            // just cd to a normal dir, not the parent (..)
-            // currently this only supports full paths
+        else if (*(arg+1) == ':') { // the second char is a : then it is a full path
             strcpy(cwd, arg);
-
-            // perhaps if the second char in arg is NOT a : (shows its not a full path [C:\dir\dir..])
-            // then we could append it to the cwd and call that the new cwd??
-
-            // Additionally TODO : make it so you can run the command C: or D: to change drives!
         }
-        return strdup(cwd);
+        else { // then it is a relative path
+            char temp[128];
+            sprintf(temp, "%s\\%s", cwd, arg);
+            strcpy(cwd, temp);
+        }
+        return strcat(strdup(cwd), "\n");
     }
-    else{  // it is not a cd command with args (could be cd with no args)
+    else if (*(cmd+1) == ':' && arg == NULL && strlen(cmd) == 2) {  // it's change drive command (D: for example)
+        strcpy(cwd, cmd);
+        return strcat(strdup(cwd), "\n");
+    }
+    else {  // it is a normal command
         char finalCmd[512];
         char cwdDrive[8] = "";
 
         strncpy(cwdDrive, cwd, 2);
-        sprintf(finalCmd, "%s && cd %s && %s 2>&1", cwdDrive, cwd, cmd);
+        sprintf(finalCmd, "%s && cd %s\\ && %s 2>&1", cwdDrive, cwd, cmd);
 
-        //printf("FINAL COMMAND: %s\n", finalCmd);
+        // printf("FINAL COMMAND: %s\n", finalCmd);
         return getCmdOut(finalCmd, REPLY_MAX_SIZE);
     }
 }
