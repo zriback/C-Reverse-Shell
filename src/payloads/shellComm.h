@@ -17,6 +17,6 @@ FILE* getCmdOut(char * cmd);
 
 char* getCmdOutStr(char * cmd, int REPLY_MAX_SIZE);
 
-FILE* createTmpFile(char * txt);
+FILE* getTempFile(char * string);
 
 #endif
