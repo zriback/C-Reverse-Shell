@@ -41,39 +41,18 @@ int comm(SOCKET sock, int BUF_SIZE, int REPLY_MAX_SIZE){
 
         // at this point we have their message in buf and the size in bytesRecv
         if (strcmp(buf, "close") != 0){
-            reply = processMsg(buf, cwd);
+            // determines how the resulting file shall be sent: 0=as text and 1=as binary
+            int replyType[1];
+            reply = processMsg(buf, cwd, replyType);
 
-            int allDataSent = 0;
-
-            while(!allDataSent){
-
-                char * sendString = (char*)calloc(REPLY_MAX_SIZE, sizeof(char));
-                char line[REPLY_MAX_SIZE];
-
-                // Populate sendString with data from the tmp file returned from processMsg()
-                void * readResult;
-                int bytesCat = 0;
-                while((readResult = fgets(line, REPLY_MAX_SIZE - bytesCat - 1, reply)) != NULL){
-                    strncat(sendString, line, REPLY_MAX_SIZE-bytesCat-1);
-                    bytesCat+=(strlen(line));
-                    if (bytesCat >= REPLY_MAX_SIZE-2){ // -2 because cannot concatenate a string of length 1
-                        break;
-                    }
-                }
-                if (readResult == NULL){ // then EOF was reached and all data has been sent
-                    allDataSent = 1;
-                }
-
-                // if this is the final block of data to be sent, add the ETX byte
-                if (allDataSent){
-                    *(sendString+strlen(sendString)) = 0x03;
-                }
-
-                // send message back to the client
-                send(sock, sendString, strlen(sendString), 0);
-                
-                free(sendString);            
+            // evaulate the command that was sent to determine if the file shall be sent as text or as binary
+            if (replyType[0] == 0){
+                sendString(sock, reply, REPLY_MAX_SIZE);
             }
+            else{
+                sendFile(sock, reply, REPLY_MAX_SIZE);
+            }
+
             fclose(reply);
 
             // remove the reply file if it is temp file in memory
@@ -96,29 +75,92 @@ int comm(SOCKET sock, int BUF_SIZE, int REPLY_MAX_SIZE){
 }
 
 /*
+Takes a file and sends entire contents in string to the socket
+*/
+void sendString(SOCKET sock, FILE *file, int REPLY_MAX_SIZE){
+    int allDataSent = 0;
+    while(!allDataSent){
+        char * buffer = (char*)calloc(REPLY_MAX_SIZE, sizeof(char));
+        char line[REPLY_MAX_SIZE];
+
+        // Populate sendString with data from the file returned from processMsg()
+        void * readResult;
+        int bytesCat = 0;
+        while((readResult = fgets(line, REPLY_MAX_SIZE - bytesCat - 1, file)) != NULL){
+            strncat(buffer, line, REPLY_MAX_SIZE-bytesCat-1);
+            bytesCat+=(strlen(line));
+            if (bytesCat >= REPLY_MAX_SIZE-2){ // -2 because cannot concatenate a string of length 1
+                break;
+            }
+        }
+        if (readResult == NULL){ // then EOF was reached and all data has been sent
+            allDataSent = 1;
+            *(buffer+strlen(buffer)) = 0x03; // add the ETX byte
+        }
+
+        // send message back to the client
+        send(sock, buffer, strlen(buffer), 0);
+        
+        free(buffer);            
+    }
+}
+
+/*
+Takes a file and sends contents as a binary
+*/
+void sendFile(SOCKET sock, FILE *file, int REPLY_MAX_SIZE){
+    fseek(file, 0, SEEK_SET); // seek to the beginning of the file
+
+    int allDataSent = 0;
+    while(!allDataSent){
+        int * buffer = (int*)calloc(REPLY_MAX_SIZE, sizeof(int));
+
+        int c;
+        int i = 0;
+        while(!feof(file) && i < REPLY_MAX_SIZE-1){
+            c = fgetc(file);
+            *(buffer+i) = c;
+            i++;
+        }
+        if (i < REPLY_MAX_SIZE-1){ // we ended because of EOF, meaning this is the last of the data
+            allDataSent = 1;
+        }
+
+        // NOTE - the above code automatically will add a -1 for the ETX if it is the end of the file
+
+        send(sock, (char*)buffer, i*4, 0); 
+        printf("sending buffer");
+
+        free(buffer);
+    }
+
+
+
+}
+/*
 Function for proccessing the input sent from the client
 Places the necessary response in char *reply, and returns a pointer to the reply in memory
 */
-FILE* processMsg(char * msg, char * cwd){
+FILE* processMsg(char * msg, char * cwd, int * replyType){
     // check if a shell (cmd prompt) command is being issued
     // an input that starts with "cmd" or "c"
     char msgCpy[128];
     strncpy(msgCpy, msg, sizeof(msgCpy));
     if (strcmp(strtok(msgCpy, " "), "cmd") == 0 || strcmp(strtok(msgCpy, " "), "c") == 0){
         msg+=(strcspn(msg, " ")+1); // pass everthing after the "cmd " or "c " at the beginning of the msg
-        return processShellCmd(msg, cwd);
+        return processShellCmd(msg, cwd, replyType);
     }
     else {  // it is a command not meant to be executed by the shell
-        return processExtCmd(msg, cwd);
+        return processExtCmd(msg, cwd, replyType);
     }
 }
 
 /*
 Process external commands. Perform function and return output
 */
-FILE* processExtCmd(char * cmd, char * cwd){
+FILE* processExtCmd(char * cmd, char * cwd, int * replyType){
     char cmdCpy[128];
-    strncpy(cmdCpy, cmd, sizeof(cmd));
+    strncpy(cmdCpy, cmd, sizeof(cmdCpy));
 
     if (strcmp(cmd, "reset") == 0){
         char * temp;
@@ -126,15 +168,21 @@ FILE* processExtCmd(char * cmd, char * cwd){
         temp[strcspn(temp, "\n")] = '\0';
         strcpy(cwd, temp);
         free(temp);
-
+        *replyType = 0;
         return getTempFile(cwd);
     }
     else if (strcmp(strtok(cmdCpy, " "), "transfer") == 0) {
-        char * filename = cmd;
-        filename += (strcspn(cmd, " ")+1); // get the entire second argument whether or not it includes spaces
-        return getTempFile("The transfer command has not been implemented yet.");
+        char * temp = cmd;
+        temp += (strcspn(cmd, " ")+1); // get the entire second argument whether or not it includes spaces
+        char filename[128];
+        sprintf(filename, "%s/%s", cwd, temp);
+        printf("filename is %s\n", filename);
+
+        *replyType = 1;
+        return fopen(filename, "rb");
     }
     else{
+        *replyType = 0;
         return getTempFile("That command is not recognized!\n");
     }
 }
@@ -143,7 +191,9 @@ FILE* processExtCmd(char * cmd, char * cwd){
 Process and edit command before sending it to the system to obtain output.
 Returns the output from the command
 */
-FILE* processShellCmd(char * cmd, char * cwd) {
+FILE* processShellCmd(char * cmd, char * cwd, int * replyType) {
+    // all these files shall be sent as text
+    *replyType = 0;
     // everything related to current working directory
     // if it is a cd command, change the current working directory, if it's not, prepend the cd to cwd and then getCmdOut
     char cmdCopy[64];

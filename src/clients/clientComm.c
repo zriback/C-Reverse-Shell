@@ -28,34 +28,21 @@ int comm(SOCKET sock, int BUF_SIZE, int INPUT_SIZE){
         // create a smaller sending string first the is the size of the actual input
         char * sendString = (char*)calloc(strlen(input)+1, sizeof(char));
         strcpy(sendString, input);
-        int sendResult = send(sock, sendString, strlen(input)+1, 0); //maybe need a size+1 here?
+        int sendResult = send(sock, sendString, strlen(input)+1, 0);
+        // 0=text reply, 1=binary reply
+        char * filename = (char*)calloc(64, sizeof(char));
+        int replyType = processCmd(sendString, filename);
         free(sendString);
 
         if (sendResult != SOCKET_ERROR){
             // turns to true (1) once the end of the message is recieved (recieved the 0x03 ETX byte)
-            int msgEnd = 0;
-            while (!msgEnd){
-                memset(buf, 0, sizeof(buf));
-                int bytesRec = recv(sock, buf, sizeof(buf), 0); // waits for response and blocks - response is copied into buff
-                
-                if (bytesRec > 0){  // then print the message
-                    char * response = (char*)calloc(bytesRec+1, sizeof(char));
-                    strncpy(response, buf, bytesRec);
-
-                    // if the last byte (excluding the \0) is 0x03, this is the end of the message and we should end the loop
-                    if (*(response+strlen(response)-1) == 0x03){
-                        msgEnd = 1;
-                        // get rid of the ETX byte before printing
-                        *(response+strlen(response)-1) = '\0';
-                    }
-
-
-                    printf("%s", response);
-                    free(response);
-                }
+            if (replyType == 0){ // 0 for text/string
+                recvString(sock, BUF_SIZE);
             }
-
-            
+            else{ // 1 for file
+                recvFile(sock, filename, BUF_SIZE);
+            }
+            free(filename);
         }
         else{
             printf("Error sending command");
@@ -63,6 +50,64 @@ int comm(SOCKET sock, int BUF_SIZE, int INPUT_SIZE){
         } 
         printf("\n");
     }
-    
     return 1;
+}
+
+// recieve reply as a string
+void recvString(SOCKET sock, int BUF_SIZE){
+    char buf[BUF_SIZE];
+    int msgEnd = 0;
+    while (!msgEnd){
+        memset(buf, 0, sizeof(buf));
+        int bytesRecv = recv(sock, buf, sizeof(buf), 0); // waits for response and blocks - response is copied into buff
+        
+        if (bytesRecv > 0){  // then print the message
+            char * response = (char*)calloc(bytesRecv+1, sizeof(char));
+            strncpy(response, buf, bytesRecv);
+
+            // if the last byte (excluding the \0) is 0x03, this is the end of the message and we should end the loop
+            if (*(response+strlen(response)-1) == 0x03){
+                msgEnd = 1;
+                // get rid of the ETX byte before printing
+                *(response+strlen(response)-1) = '\0';
+            }
+            printf("%s", response);
+            free(response);
+        }
+    } 
+}
+
+// recieve reply as binary
+void recvFile(SOCKET sock, char * filename, int BUF_SIZE){
+    char buf[BUF_SIZE];
+    int msgEnd = 0;
+    while(!msgEnd){
+
+        memset(buf, 0, sizeof(buf));
+        int bytesRecv = recv(sock, buf, sizeof(buf), 0); // waits for response and blocks - response is copied into buff
+        int * bytes = (int*)buf;
+
+        FILE *fp = fopen(filename, "wb");
+        
+        for(int i = 0; i < bytesRecv; i++){
+            if(*(bytes+i) == -1){ // the end byte
+                msgEnd = 1;
+                break;
+            }
+            fputc(*(bytes+i), fp);
+        }
+
+        fclose(fp);
+
+    }
+}
+
+int processCmd(char * cmd, char * filename){
+    if (strcmp(strtok(cmd, " "), "transfer") == 0){
+        strcpy(filename, strtok(NULL, "\0"));
+        return 1;
+    }
+    else{
+        return 0;
+    }
 }

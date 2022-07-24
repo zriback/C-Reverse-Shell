@@ -7,4 +7,10 @@
 
 int comm(SOCKET sock, int BUF_SIZE, int INPUT_SIZE);
 
+void recvFile(SOCKET sock, char * filename, int BUF_SIZE);
+
+void recvString(SOCKET sock, int BUF_SIZE);
+
+int processCmd(char * cmd, char * filename);
+
 #endif
