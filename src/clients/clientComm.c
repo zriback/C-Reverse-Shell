@@ -81,25 +81,22 @@ void recvString(SOCKET sock, int BUF_SIZE){
 void recvFile(SOCKET sock, char * filename, int BUF_SIZE){
     char buf[BUF_SIZE];
     int msgEnd = 0;
+    FILE *fp = fopen(filename, "wb");
     while(!msgEnd){
-
         memset(buf, 0, sizeof(buf));
         int bytesRecv = recv(sock, buf, sizeof(buf), 0); // waits for response and blocks - response is copied into buff
         int * bytes = (int*)buf;
-
-        FILE *fp = fopen(filename, "wb");
         
-        for(int i = 0; i < bytesRecv; i++){
+        for(int i = 0; i < bytesRecv/sizeof(int); i++){
             if(*(bytes+i) == -1){ // the end byte
                 msgEnd = 1;
                 break;
             }
             fputc(*(bytes+i), fp);
         }
-
-        fclose(fp);
-
     }
+    fclose(fp);
+
 }
 
 int processCmd(char * cmd, char * filename){

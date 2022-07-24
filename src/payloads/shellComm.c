@@ -129,7 +129,6 @@ void sendFile(SOCKET sock, FILE *file, int REPLY_MAX_SIZE){
         // NOTE - the above code automatically will add a -1 for the ETX if it is the end of the file
 
         send(sock, (char*)buffer, i*4, 0); 
-        printf("sending buffer");
 
         free(buffer);
     }
@@ -175,8 +174,7 @@ FILE* processExtCmd(char * cmd, char * cwd, int * replyType){
         char * temp = cmd;
         temp += (strcspn(cmd, " ")+1); // get the entire second argument whether or not it includes spaces
         char filename[128];
-        sprintf(filename, "%s/%s", cwd, temp);
-        printf("filename is %s\n", filename);
+        sprintf(filename, "%s\\%s", cwd, temp);
 
         *replyType = 1;
         return fopen(filename, "rb");
