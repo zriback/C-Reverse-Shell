@@ -52,13 +52,9 @@ The default working directory will be set to the current users home directory.
 
 ### Other commands
 
-There are no external commands unique to this application implemented as of 7/17/2022. However, the goal is to have the following:
+There are also some external commands that can be run by the client. These commands are notably not preceding by a "c" or "cmd" on the command line.
 
 ```> transfer filename``` - transfer the given file from the victim to the attacker's machine.
 
 ```> screenshot``` - take and send a screenshot of the victim's screen.
-
-```> camera``` - take and send a picture from the victim's webcam.
-
-AND MORE!
 
