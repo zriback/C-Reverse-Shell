@@ -30,6 +30,9 @@ int captureImage(HWND hWnd, char * filename){
         return 1;
     }
 
+    // Make process DPI aware to avoid wrongly sized screenshots when screen resolution changes
+    SetProcessDPIAware();
+
     // get area for size calculations
     RECT rcClient;
     GetClientRect(hWnd, &rcClient);
