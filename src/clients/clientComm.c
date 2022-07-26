@@ -99,9 +99,25 @@ void recvFile(SOCKET sock, char * filename, int BUF_SIZE){
 
 }
 
+/*
+Processes the command
+Return values indicated reply type
+    0 - recieve text
+    1 - recieve file (binary)
+*/
 int processCmd(char * cmd, char * filename){
-    if (strcmp(strtok(cmd, " "), "transfer") == 0){
+    char cmdCpy[64];
+    strcpy(cmdCpy, cmd);
+    // the top level (first) command
+    char * topCmd;
+    topCmd = strtok(cmdCpy, " ");
+
+    if (strcmp(topCmd, "transfer") == 0){
         strcpy(filename, strtok(NULL, "\0"));
+        return 1;
+    }
+    else if (strcmp(topCmd, "screenshot") == 0){
+        strcpy(filename, "capture.PNG");
         return 1;
     }
     else{
