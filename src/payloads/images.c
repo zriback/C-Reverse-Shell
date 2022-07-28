@@ -2,6 +2,9 @@
 #include <windows.h>
 #include <stdio.h>
 
+#define QUALX 1280
+#define QUALY 720
+
 // NOTE: a lot of this code from https://docs.microsoft.com/en-us/windows/win32/gdi/capturing-an-image
 // NOTE: Needs to be compiled with gcc with -lgdiplus and -lgdi32
 
@@ -41,10 +44,10 @@ int captureImage(HWND hWnd, char * filename){
     SetStretchBltMode(hdcWindow, HALFTONE);
 
     // the source DC is the entire screen, and the destination in the current window (for now)
-    StretchBlt(hdcWindow, 0, 0, rcClient.right, rcClient.bottom, hdcScreen, 0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN), SRCCOPY);
+    StretchBlt(hdcWindow, 0, 0, QUALX, QUALY, hdcScreen, 0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN), SRCCOPY);
 
     // create a compatible bitmap from the Window DC
-    hbmScreen = CreateCompatibleBitmap(hdcWindow, rcClient.right - rcClient.left, rcClient.bottom - rcClient.top);
+    hbmScreen = CreateCompatibleBitmap(hdcWindow, QUALX, QUALY);
     if (!hbmScreen){
         printf("Error creating hmbScreen\n");
         return 1;
@@ -54,7 +57,7 @@ int captureImage(HWND hWnd, char * filename){
     SelectObject(hdcMemDC, hbmScreen);
 
     // transfer bits into the memory DC
-    BitBlt(hdcMemDC, 0, 0, rcClient.right - rcClient.left, rcClient.bottom - rcClient.top, hdcWindow, 0 , 0, SRCCOPY);
+    StretchBlt(hdcMemDC, 0, 0, QUALX, QUALY, hdcWindow, 0 , 0, QUALX, QUALY, SRCCOPY);
 
     // get the bitmap from the hbitmap
     GetObject(hbmScreen, sizeof(BITMAP), &bmpScreen);

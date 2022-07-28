@@ -40,7 +40,7 @@ int comm(SOCKET sock, int BUF_SIZE, int INPUT_SIZE){
                 recvString(sock, BUF_SIZE);
             }
             else{ // 1 for file
-                recvFile(sock, filename, BUF_SIZE);
+                recvFile(sock, filename, BUF_SIZE*2);
             }
             free(filename);
         }
@@ -85,15 +85,18 @@ void recvFile(SOCKET sock, char * filename, int BUF_SIZE){
     while(!msgEnd){
         memset(buf, 0, sizeof(buf));
         int bytesRecv = recv(sock, buf, sizeof(buf), 0); // waits for response and blocks - response is copied into buff
+        Sleep(.65); // slow it down a bit maybe helps?
         int * bytes = (int*)buf;
         
         for(int i = 0; i < bytesRecv/sizeof(int); i++){
             if(*(bytes+i) == -1){ // the end byte
                 msgEnd = 1;
+                // printf("msg end\n");
                 break;
             }
             fputc(*(bytes+i), fp);
         }
+        // printf("after while\n");
     }
     fclose(fp);
 

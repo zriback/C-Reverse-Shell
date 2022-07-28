@@ -51,7 +51,7 @@ int comm(SOCKET sock, int BUF_SIZE, int REPLY_MAX_SIZE){
                 sendString(sock, reply, REPLY_MAX_SIZE);
             }
             else{
-                sendFile(sock, reply, REPLY_MAX_SIZE);
+                sendFile(sock, reply, REPLY_MAX_SIZE*2);
             }
 
             fclose(reply);
@@ -123,13 +123,16 @@ void sendFile(SOCKET sock, FILE *file, int REPLY_MAX_SIZE){
             *(buffer+i) = c;
             i++;
         }
+        // printf("after while and i is %d\n", i);
         if (i < REPLY_MAX_SIZE-1){ // we ended because of EOF, meaning this is the last of the data
             allDataSent = 1;
+            // printf("all data sent\n");
         }
 
         // NOTE - the above code automatically will add a -1 for the ETX if it is the end of the file
 
         send(sock, (char*)buffer, i*4, 0); 
+        Sleep(.65); // slow it down a bit maybe helps?
 
         free(buffer);
     }
