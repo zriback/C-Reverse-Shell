@@ -40,21 +40,21 @@ and to read a file, use
 
 Its also important to note that the attacker can change directory around the victims machine like normal. To do so, use commands like
 
-```c cd ..``` - move to parent directory
+```> c cd ..``` - move to parent directory
 
-```c cd directory_name/``` - use relative path
+```> c cd directory_name/``` - use relative path
 
-```c cd C:\Users``` - use absolute path
+```> c cd C:\Users``` - use absolute path
 
-```c D:``` - change drives (in this case, to the D drive)
+```> c cd D:``` - change drives (in this case, to the D drive)
 
 The default working directory will be set to the current users home directory.
 
 ### Other commands
 
-There are also some external commands that can be run by the client. These commands are notably not preceding by a "c" or "cmd" on the command line.
+There are also some external commands that can be run by the client. These commands are notably not preceded by a "c" or "cmd" on the command line.
 
 ```> transfer filename``` - transfer the given file from the victim to the attacker's machine.
 
-```> screenshot``` - take and send a screenshot of the victim's screen.
+```> screenshot``` - send a screenshot of the victim's screen.
 
