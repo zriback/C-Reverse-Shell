@@ -5,12 +5,11 @@
 #define QUALX 1280
 #define QUALY 720
 
-// NOTE: a lot of this code from https://docs.microsoft.com/en-us/windows/win32/gdi/capturing-an-image
+// NOTE: a lot of this code comes from https://docs.microsoft.com/en-us/windows/win32/gdi/capturing-an-image
 // NOTE: Needs to be compiled with gcc with -lgdiplus and -lgdi32
 
 // HWND hWnd in the window we are capturing an image of 
 int captureImage(HWND hWnd, char * filename){
-    HDC hdcScreen;
     HDC hdcWindow;
     HDC hdcMemDC = NULL;
     HBITMAP hbmScreen = NULL;
@@ -23,7 +22,6 @@ int captureImage(HWND hWnd, char * filename){
     DWORD dwBmpSize = 0;
 
     // retrieve handle to display device content 
-    hdcScreen = GetDC(NULL);
     hdcWindow = GetDC(hWnd);
 
     // Create a compatible DC (domain controller)
@@ -36,16 +34,6 @@ int captureImage(HWND hWnd, char * filename){
     // Make process DPI aware to avoid wrongly sized screenshots when screen resolution changes
     SetProcessDPIAware();
 
-    // get area for size calculations
-    RECT rcClient;
-    GetClientRect(hWnd, &rcClient);
-
-    // use this stretch mode
-    SetStretchBltMode(hdcWindow, HALFTONE);
-
-    // the source DC is the entire screen, and the destination in the current window (for now)
-    StretchBlt(hdcWindow, 0, 0, QUALX, QUALY, hdcScreen, 0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN), SRCCOPY);
-
     // create a compatible bitmap from the Window DC
     hbmScreen = CreateCompatibleBitmap(hdcWindow, QUALX, QUALY);
     if (!hbmScreen){
@@ -56,8 +44,11 @@ int captureImage(HWND hWnd, char * filename){
     // Select the compatible bitmap into the memory DC
     SelectObject(hdcMemDC, hbmScreen);
 
+    // use this stretch mode
+    SetStretchBltMode(hdcMemDC, HALFTONE);
+
     // transfer bits into the memory DC
-    StretchBlt(hdcMemDC, 0, 0, QUALX, QUALY, hdcWindow, 0 , 0, QUALX, QUALY, SRCCOPY);
+    StretchBlt(hdcMemDC, 0, 0, QUALX, QUALY, hdcWindow, 0 , 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN), SRCCOPY);
 
     // get the bitmap from the hbitmap
     GetObject(hbmScreen, sizeof(BITMAP), &bmpScreen);
@@ -118,7 +109,6 @@ int captureImage(HWND hWnd, char * filename){
 
     DeleteObject(hbmScreen);
     DeleteObject(hdcMemDC);
-    ReleaseDC(NULL, hdcScreen);
     ReleaseDC(hWnd, hdcWindow);
 
     return 0; // for normal exit
